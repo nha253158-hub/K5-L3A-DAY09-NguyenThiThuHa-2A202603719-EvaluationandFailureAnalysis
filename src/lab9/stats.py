@@ -12,28 +12,43 @@ from collections.abc import Sequence
 POS = "FAIL"   # the judge's job is to FIND failures, so FAIL is the positive class
 
 
-def confusion(human: Sequence[str], judge: Sequence[str]) -> dict[str, int]:
-    """tp/fp/fn/tn with FAIL as positive."""
-    # TODO M2
-    raise NotImplementedError
+def confusion(human, judge):
+    tp = sum(h == POS and j == POS for h, j in zip(human, judge))
+    fp = sum(h != POS and j == POS for h, j in zip(human, judge))
+    fn = sum(h == POS and j != POS for h, j in zip(human, judge))
+    return {"tp": tp, "fp": fp, "fn": fn, "tn": len(human) - tp - fp - fn}
 
 
 def precision_recall(human: Sequence[str], judge: Sequence[str]) -> tuple[float, float]:
-    # TODO M2: precision = tp/(tp+fp), recall = tp/(tp+fn); return 0.0 when the denominator is 0
-    raise NotImplementedError
+    tp = sum(h == POS and j == POS for h, j in zip(human, judge))
+    tn = sum(h != POS and j!=POS for h,j in zip(human,judge))
+    fp = sum(h != POS and j == POS for h, j in zip(human, judge))
+    fn = sum(h == POS and j != POS for h, j in zip(human, judge))
+    return [tp/(tp + fp), tp/(tp+fn)]
+
 
 
 def cohen_kappa(human: Sequence[str], judge: Sequence[str]) -> float:
     """kappa = (p_o - p_e) / (1 - p_e). Raise ValueError when undefined (p_e == 1):
     a constant judge has no signal and must FAIL calibration, not pass on a technicality."""
-    # TODO M2
-    raise NotImplementedError
+    tp = sum(h == POS and j == POS for h, j in zip(human, judge))
+    tn = sum(h != POS and j!=POS for h,j in zip(human,judge))
+    fp = sum(h != POS and j == POS for h, j in zip(human, judge))
+    fn = sum(h == POS and j != POS for h, j in zip(human, judge))
+    n = len(human)
+    po = (tn + tp)/n
+    p_human_fail = human.count(POS)/n
+    p_judge_fail = judge.count(POS)/n
+    pe = p_human_fail*p_judge_fail +(1-p_human_fail)*(1-p_judge_fail)
+    if pe == 1:                                    # thêm
+        raise ValueError("kappa undefined")        # thêm
+    return (po-pe)/(1-pe)
 
 
 def rogan_gladen(observed_rate: float, sensitivity: float, specificity: float) -> float:
     """Correct an observed failure rate for judge error; clip to [0, 1]."""
-    # TODO M2: (p_obs + spec - 1) / (sens + spec - 1)
-    raise NotImplementedError
+    denom = sensitivity + specificity -1
+    return min(1,max(0,(observed_rate+specificity-1)/denom))
 
 
 def paired_bootstrap(a: Sequence[float], b: Sequence[float], *, n_resamples: int = 1000,
