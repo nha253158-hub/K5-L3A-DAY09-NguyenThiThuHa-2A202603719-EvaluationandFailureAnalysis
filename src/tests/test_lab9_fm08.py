@@ -89,3 +89,10 @@ def test_c008_reply_35k_but_ledger_20k_lab8_passes_it_but_we_do_not(graders):
 
 def test_proposal_is_quote_registered(graders):
     assert "proposal_is_quote" in graders.GRADERS
+def test_c014_proposal_120k_but_quote_150k(graders):
+    # seeded_regression C-014@11: event 3 quote 150000, event 5 proposal 120000 (tự trừ 30.000 đã hoàn)
+    ev = [{"kind": "quote", "payload": {"amount_vnd": 150000}},
+          {"kind": "refund_history", "payload": {"refund_count": 1, "refunded_vnd": 30000}},
+          {"kind": "proposal", "payload": {"amount_vnd": 120000}}]
+    res = graders.ProposalIsQuote().evaluate(ctx(with_events(ev), {**LABEL, "refund_vnd": 120000}))
+    assert res.value is False and "120000 != quote 150000" in res.reason
