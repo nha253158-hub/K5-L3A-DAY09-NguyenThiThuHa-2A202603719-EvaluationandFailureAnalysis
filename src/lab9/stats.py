@@ -8,7 +8,8 @@ Reference values to self-check are in tests/test_lab9_stats.py.
 from __future__ import annotations
 
 from collections.abc import Sequence
-
+import numpy as np
+from scipy.stats import bootstrap
 POS = "FAIL"   # the judge's job is to FIND failures, so FAIL is the positive class
 
 
@@ -56,8 +57,16 @@ def paired_bootstrap(a: Sequence[float], b: Sequence[float], *, n_resamples: int
     """a[i], b[i] = per-item mean over seeds, SAME items, SAME order.
     Return (mean(a)-mean(b), lo, hi) with scipy.stats.bootstrap(paired=True, method="percentile",
     rng=numpy.random.default_rng(rng)). If a == b everywhere return (0.0, 0.0, 0.0)."""
-    # TODO M4
-    raise NotImplementedError
+        
+
+    a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
+    if np.array_equal(a, b):
+        return 0.0, 0.0, 0.0
+    res = bootstrap((a, b), lambda x, y, axis: np.mean(x, axis=axis) - np.mean(y, axis=axis),
+                    paired=True, vectorized=True, method="percentile", n_resamples=n_resamples,
+                    confidence_level=confidence, rng=np.random.default_rng(rng))
+    ci = res.confidence_interval
+    return float(a.mean() - b.mean()), float(ci.low), float(ci.high)
 
 
 def pass_at_k(n: int, c: int, k: int) -> float:
