@@ -3,3 +3,9 @@ __pycache__/
 src/reports/
 src/traces/
 *.sqlite
+.venv/
+.env
+.env.*
+!.env.example
+student_drop/
+src/eval/instructor/
