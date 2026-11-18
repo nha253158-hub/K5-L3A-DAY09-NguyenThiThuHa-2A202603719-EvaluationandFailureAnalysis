@@ -21,12 +21,11 @@ def confusion(human, judge):
 
 
 def precision_recall(human: Sequence[str], judge: Sequence[str]) -> tuple[float, float]:
-    tp = sum(h == POS and j == POS for h, j in zip(human, judge))
-    tn = sum(h != POS and j!=POS for h,j in zip(human,judge))
-    fp = sum(h != POS and j == POS for h, j in zip(human, judge))
-    fn = sum(h == POS and j != POS for h, j in zip(human, judge))
-    return [tp/(tp + fp), tp/(tp+fn)]
-
+    c = confusion(human, judge)
+    tp, fp, fn = c["tp"], c["fp"], c["fn"]
+    precision = tp / (tp + fp) if tp + fp else 0.0   # no predicted FAIL -> 0.0 (starter spec)
+    recall = tp / (tp + fn) if tp + fn else 0.0      # no real FAIL -> 0.0
+    return precision, recall
 
 
 def cohen_kappa(human: Sequence[str], judge: Sequence[str]) -> float:
@@ -37,6 +36,8 @@ def cohen_kappa(human: Sequence[str], judge: Sequence[str]) -> float:
     fp = sum(h != POS and j == POS for h, j in zip(human, judge))
     fn = sum(h == POS and j != POS for h, j in zip(human, judge))
     n = len(human)
+    if n == 0:
+        raise ValueError("kappa undefined: empty input")
     po = (tn + tp)/n
     p_human_fail = human.count(POS)/n
     p_judge_fail = judge.count(POS)/n
@@ -48,7 +49,9 @@ def cohen_kappa(human: Sequence[str], judge: Sequence[str]) -> float:
 
 def rogan_gladen(observed_rate: float, sensitivity: float, specificity: float) -> float:
     """Correct an observed failure rate for judge error; clip to [0, 1]."""
-    denom = sensitivity + specificity -1
+    denom = sensitivity + specificity - 1
+    if abs(denom) < 1e-12:
+        raise ValueError("sensitivity + specificity == 1: the judge carries no signal")
     return min(1,max(0,(observed_rate+specificity-1)/denom))
 
 
